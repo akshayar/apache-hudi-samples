@@ -171,7 +171,8 @@ spark-submit \
 --jars `ls /usr/lib/hudi/hudi-utilities-bundle*.jar` \
 --help
 ```   
-3. Copy Jars
+3. Copy Jars 
+-- These steps are not required anymore. 
 ```shell
 wget https://repo1.maven.org/maven2/org/apache/calcite/calcite-core/1.29.0/calcite-core-1.29.0.jar .
 wget https://repo1.maven.org/maven2/org/apache/thrift/libfb303/0.9.3/libfb303-0.9.3.jar .
@@ -187,8 +188,12 @@ sudo cp libfb303-0.9.3.jar /usr/lib/spark/jars
    
 
 ```shell
+wget https://raw.githubusercontent.com/akshayar/apache-hudi-samples/main/spark-streaming-kafka/hudi-delta-streamer/TradeData.avsc
+wget https://raw.githubusercontent.com/akshayar/apache-hudi-samples/main/spark-streaming-kafka/hudi-delta-streamer/hudi-deltastreamer-schema-file-json.properties 
+wget https://raw.githubusercontent.com/akshayar/apache-hudi-samples/main/spark-streaming-kafka/hudi-delta-streamer/hudi-deltastreamer-schema-registry-avro.properties
 hdfs dfs -copyFromLocal -f TradeData.avsc /
 hdfs dfs -copyFromLocal -f hudi-deltastreamer-schema-file-json.properties /
+hdfs dfs -copyFromLocal -f hudi-deltastreamer-schema-registry-avro.properties /
 ```
 5. Run Spark Submit program. 
    JSON data on Kafka, Schema read from a local files on HDFS. The table is being synched with Glue Catalog
@@ -198,15 +203,15 @@ hdfs dfs -copyFromLocal -f hudi-deltastreamer-schema-file-json.properties /
 spark-submit \
 --class  org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \
 --jars `ls /usr/lib/hudi/hudi-utilities-bundle*.jar ` \
---checkpoint s3://akshaya-hudi-experiments/demo/kafka-stream-data-checkpoint/table_delta_streamer_cow_2/ \
+--checkpoint s3://akshaya-hudi-experiments/demo/hudi-delta-streamer/kafka-stream-data-checkpoint/table_delta_streamer_cow/ \
 --continuous  \
 --enable-hive-sync \
 --schemaprovider-class org.apache.hudi.utilities.schema.FilebasedSchemaProvider \
 --source-class org.apache.hudi.utilities.sources.JsonKafkaSource \
 --spark-master yarn \
 --table-type COPY_ON_WRITE \
---target-base-path s3://akshaya-hudi-experiments/demo/hudi/table_delta_streamer_cow_2 \
---target-table table_delta_streamer_cow_2 \
+--target-base-path s3://akshaya-hudi-experiments/demo/hudi-delta-streamer/table_delta_streamer_cow \
+--target-table table_delta_streamer_cow \
 --op UPSERT \
 --source-ordering-field tradeId \
 --props  hdfs:///hudi-deltastreamer-schema-file-json.properties
@@ -221,15 +226,15 @@ spark-submit \
 spark-submit \
 --class  org.apache.hudi.utilities.deltastreamer.HoodieDeltaStreamer \
 --jars `ls /usr/lib/hudi/hudi-utilities-bundle*.jar ` \
---checkpoint s3://akshaya-hudi-experiments/demo/kafka-stream-data-checkpoint/table_delta_streamer_cow_2_avro/ \
+--checkpoint s3://akshaya-hudi-experiments/demo/hudi-delta-streamer/kafka-stream-data-checkpoint/table_delta_streamer_cow_2_avro/ \
 --continuous  \
 --enable-hive-sync \
 --schemaprovider-class org.apache.hudi.utilities.schema.SchemaRegistryProvider \
 --source-class org.apache.hudi.utilities.sources.AvroKafkaSource \
 --spark-master yarn \
 --table-type COPY_ON_WRITE \
---target-base-path s3://akshaya-hudi-experiments/demo/hudi/table_delta_streamer_cow_2 \
---target-table table_delta_streamer_cow_2 \
+--target-base-path s3://akshaya-hudi-experiments/demo/hudi-delta-streamer/table_delta_streamer_avro_cow \
+--target-table table_delta_streamer_avro_cow \
 --op UPSERT \
 --source-ordering-field tradeId \
 --props  hdfs:///hudi-deltastreamer-schema-registry-avro.properties
