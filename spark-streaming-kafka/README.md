@@ -98,6 +98,8 @@ spark-submit \
 akshaya-hudi-experiments ip-10-192-11-254.ap-south-1.compute.internal:9092 data-stream-ingest-json COW equity_trade_records_kafka_ss demohudi latest
 ```
 ## Spark Shell
+Run the shell with command below and copy paste code from  [kafka.hudi.StreamingConsumerHudi](src/main/scala/kafka/hudi/StreamingConsumerHudi.scala). The code that needs to be copied is between  (Spark Shell ---Start ) and (Spark Shell ---End ). Also ensure that the you hard code the paremeters like s3_bucket, streamName, region ,tableType and hudiTableNamePrefix.
+
 ```shell             
 spark-shell \
 --conf 'spark.serializer=org.apache.spark.serializer.KryoSerializer' \
@@ -136,7 +138,7 @@ spark-submit \
 
 ## Spark Shell
 
-Run the shell with command below and copy paste code from   [kinesis.hudi.SparkKinesisFilePathConsumerHudiProcessor](src/main/scala/kinesis/hudi/SparkKinesisFilePathConsumerHudiProcessor.scala). The code that needs to be copied is between  (Spark Shell ---Start ) and (Spark Shell ---End ). Also ensure that the you hard code the paremeters like s3_bucket, streamName, region ,tableType and hudiTableNamePrefix.
+Run the shell with command below and copy paste code from  [kafka.hudi.DMSFilleConsumerHudiProcessor](src/main/scala/kafka/hudi/DMSFilleConsumerHudiProcessor.scala). The code that needs to be copied is between  (Spark Shell ---Start ) and (Spark Shell ---End ). Also ensure that the you hard code the paremeters like s3_bucket, streamName, region ,tableType and hudiTableNamePrefix.
 
 ```shell             
 spark-shell \
