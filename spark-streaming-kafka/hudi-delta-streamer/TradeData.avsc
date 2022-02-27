@@ -1,0 +1,23 @@
+{"namespace": "com.aksh.kafka.avro.fake",
+  "type": "record",
+  "name": "TradeData",
+  "fields": [
+    {"name": "tradeId", "type": "string"},
+    {"name": "symbol", "type": "string"},
+    {"name": "quantity", "type": "double"},
+    {"name": "price", "type": "double"},
+    {"name": "timestamp", "type": "long"},
+    {"name": "description", "type": "string"},
+    {"name": "traderName", "type": "string"},
+    {"name": "traderFirm", "type": "string"},
+    {"name": "orderId", "type": "string"},
+    {"name": "portfolioId", "type": "string"},
+    {"name": "customerId", "type": "string"},
+    {"name": "buy", "type": "boolean"},
+    {"name": "orderTimestamp", "type": "string"},
+    {"name": "currentPosition", "type": "string"},
+    {"name": "buyPrice", "type": "double"},
+    {"name": "sellPrice", "type": "double"},
+    {"name": "profit", "type": "double"}
+  ]
+}

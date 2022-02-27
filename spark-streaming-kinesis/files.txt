@@ -1,0 +1,88 @@
+val inserts = convertToStringList(dataGen.generateInserts(10))
+val df = spark.read.json(spark.sparkContext.parallelize(inserts, 2))
+val test=(df.write.format("hudi"). 
+    options(getQuickstartWriteConfigs).  
+    option(PRECOMBINE_FIELD_OPT_KEY, "ts").  
+    option(RECORDKEY_FIELD_OPT_KEY, "uuid").  
+    option(PARTITIONPATH_FIELD_OPT_KEY, "partitionpath").
+    option(HIVE_STYLE_PARTITIONING_OPT_KEY, "true").
+    option(HIVE_SYNC_ENABLED_OPT_KEY, "true").
+    option(HIVE_TABLE_OPT_KEY, tableName).
+    option(HIVE_PARTITION_FIELDS_OPT_KEY, "partitionpath").
+    option(HIVE_PARTITION_EXTRACTOR_CLASS_OPT_KEY, classOf[MultiPartKeysValueExtractor].getName).
+    option(HIVE_DATABASE_OPT_KEY, "hudi").
+    option(TABLE_NAME, tableName).
+    mode(Overwrite).  
+    save(basePath))
+
+    .option(TABLE_TYPE_OPT_KEY, dsWriteOptionType)
+      .option(TABLE_NAME, hudiTableName)
+      .option(RECORDKEY_FIELD_OPT_KEY, hudiTableRecordKey)
+      .option(PARTITIONPATH_FIELD_OPT_KEY,hudiHiveTablePartitionKey)
+      .option(PRECOMBINE_FIELD_OPT_KEY, hudiTablePrecombineKey)
+      .option(KEYGENERATOR_CLASS_OPT_KEY, classOf[ComplexKeyGenerator].getName)     
+      .option(HIVE_STYLE_PARTITIONING_OPT_KEY, "true")
+      .option(HIVE_SYNC_ENABLED_OPT_KEY, "true")
+      .option(HIVE_TABLE_OPT_KEY, hudiTableName)
+      .option(HIVE_PARTITION_FIELDS_OPT_KEY, hudiHiveTablePartitionKey)
+      .option(HIVE_PARTITION_EXTRACTOR_CLASS_OPT_KEY, classOf[MultiPartKeysValueExtractor].getName)
+      .option(HIVE_DATABASE_OPT_KEY, hudiDatabaseName)
+      .option("checkpointLocation", checkpoint_path)
+      .outputMode("append")
+      .trigger(Trigger.ProcessingTime(1, TimeUnit.MINUTES))
+
+val basePath="s3://akshaya-firehose-test/hudi/hudi_trade_info_sprk31_cow"
+
+      // spark-shell
+// reload data
+spark.
+  read.
+  format("hudi").
+  load(basePath).
+  createOrReplaceTempView("hudi_trips_snapshot")
+
+val commits = spark.sql("select distinct(_hoodie_commit_time) as commitTime from  hudi_trips_snapshot where _hoodie_commit_time > date_format(cast(current_timestamp as TIMESTAMP) - INTERVAL 200 minutes,'yyyyMMddhhmmss') ").map(k => k.getString(0)).take(50)
+val commits = spark.sql("select min(_hoodie_commit_time) as commitTime from  hudi_trips_snapshot where _hoodie_commit_time > date_format(cast(current_timestamp as TIMESTAMP) - INTERVAL 200 minutes,'yyyyMMddhhmmss') ").map(k => k.getString(0)).take(50)
+
+
+val beginTime = commits(commits.length - 2) // commit time we are interested in
+
+// incrementally query data
+val tripsIncrementalDF = spark.read.format("hudi").
+  option(QUERY_TYPE_OPT_KEY, QUERY_TYPE_INCREMENTAL_OPT_VAL).
+  option(BEGIN_INSTANTTIME_OPT_KEY, beginTime).
+  load(basePath)
+tripsIncrementalDF.createOrReplaceTempView("hudi_trips_incremental")
+
+spark.sql("select `_hoodie_commit_time`, * from  hudi_trips_incremental ").show()
+
+
+spark.sql( "select current_timestamp, cast(current_timestamp as TIMESTAMP) - INTERVAL 10 minutes as current_timestamp_minus_10_min").show(false)
+spark.sql( "select current_timestamp, date_format(cast(current_timestamp as TIMESTAMP) - INTERVAL 10 minutes,'YYYYMMDDhhmmss') as current_timestamp_minus_10_min").show(false)
+
+spark.sql( "select  date_format(cast(current_timestamp as TIMESTAMP) - INTERVAL 10 minutes,'yyyyMMddhhmmss') as current_timestamp_minus_10_min").show(false)
+
+
+Input format
+	org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+Output format
+	org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+Serde serialization lib
+	org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+
+
+     spark.read.format("org.apache.hudi")
+        .load(basePath + "/*/*/*/*")
+        .createOrReplaceTempView("my_table_name")    
+      val sql ="select distinct(_hoodie_commit_time) as commitTime from  my_table_name"
+      val commits = spark.sql(sql).map(k => k.getString(0))
+      val beginTime = //Calculate from commits array. Ex. Min After Last Process.
+
+
+
+      metadata list-files --partition day=14/hour=15
+      desc
+      commits show
+      
+
+      
