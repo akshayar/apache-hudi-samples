@@ -51,7 +51,8 @@ sbt script version: 1.5.5
 ```
    aws s3 cp s3://<S3-Bucket-Name>/spark-structured-streaming-kinesis-hudi_2.12-1.0.jar .   
 ```
-# Use Case 1 - Data Published kafka. Hudi consumes and ingests the data. 
+# Use Case 1 
+Data Published to kafka. Spark Hudi consumes and ingests the data. 
 ## Message Content pushed to the topic
 ```shell
 {
@@ -109,7 +110,8 @@ spark-shell \
 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1,org.apache.spark:spark-streaming-kafka-0-10_2.12:3.1.1
 
 ```
-# Use Case 2 - CDC event Published to S3 by DMS. S3 event triggered Lambda pushes file path to Kafka.
+# Use Case 2 
+CDC event Published to S3 by DMS. S3 event triggered Lambda pushes file path to Kafka.
 ## Message Content pushed to the topic
 The filePath here is the path to the file which got added to S3 by DMS. An S3 event gets published which is consumed by Lambda. The lambda then pushes the event below to the Kafka stream which the file path of the file that got ingested.
 ```
