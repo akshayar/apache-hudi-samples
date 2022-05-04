@@ -137,7 +137,7 @@ object SparkTimeTravel {
     var result = (incrementalDF.write.format("hudi")
       .options(getQuickstartWriteConfigs)
       .option(TABLE_TYPE_OPT_KEY, dsWriteOptionType)
-      .option(TABLE_NAME, targetTableName)
+      .option("hoodie.table.name", targetTableName)
       .option(RECORDKEY_FIELD_OPT_KEY, hudiTableRecordKey)
       .option(PARTITIONPATH_FIELD_OPT_KEY,hudiHiveTablePartitionKey)
       .option(PRECOMBINE_FIELD_OPT_KEY, hudiTablePrecombineKey)
