@@ -22,8 +22,9 @@ libraryDependencies += "org.apache.spark" % "spark-streaming-kinesis-asl_2.12" %
 fork in run := true
 
 assemblyMergeStrategy in assembly := {
- case PathList("META-INF", xs @ _*) => MergeStrategy.discard
- case x => MergeStrategy.first
+  case "META-INF/services/org.apache.spark.sql.sources.DataSourceRegister" => MergeStrategy.concat
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
 }
 
 assemblyExcludedJars in assembly := {
