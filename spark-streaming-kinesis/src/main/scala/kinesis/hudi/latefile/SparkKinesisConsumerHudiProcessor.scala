@@ -166,7 +166,7 @@ object SparkKinesisConsumerHudiProcessor {
     val query = (finalDf.writeStream.format("hudi")
       .options(getQuickstartWriteConfigs)
       .option(TABLE_TYPE_OPT_KEY, dsWriteOptionType)
-      .option(TABLE_NAME_OPT_KEY, hudiTableName)
+      .option(HoodieWriteConfig.TABLE_NAME, hudiTableName)
       .option(RECORDKEY_FIELD_OPT_KEY, hudiTableRecordKey)
       .option(PARTITIONPATH_FIELD_OPT_KEY,hudiHiveTablePartitionKey)
       .option(PRECOMBINE_FIELD_OPT_KEY, hudiTablePrecombineKey)
