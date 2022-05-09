@@ -245,7 +245,7 @@ spark-submit \
 ```shell
  aws dms create-endpoint --endpoint-identifier s3-target-dms \
  --engine-name s3 --endpoint-type target \
- --s3-settings '{"ServiceAccessRoleArn": "arn:aws:iam::799223504601:role/dms-s3-target-role",  "BucketFolder": "dms/","BucketName": "akshaya-hudi-experiments", "DataFormat": "parquet" }'
+ --s3-settings '{"ServiceAccessRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/dms-s3-target-role",  "BucketFolder": "dms/","BucketName": "akshaya-hudi-experiments", "DataFormat": "parquet" }'
 ```
 ```shell
 spark-submit \
