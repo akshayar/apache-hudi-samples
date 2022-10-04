@@ -16,14 +16,18 @@ aws emr create-cluster --os-release-label 2.0.20220606.1 \
 --region us-east-1
 ```
 ### Create MSK
+1. Create and configure MSK cluster. 
 ### Create Kafka Connect
+To bring up Kafka connect docker container. 
 ```
 docker-compose -f docker-compose-confluent-schema.yaml up 
 ```
+To bring down the Kafka connect docker container. 
 ```
 docker-compose -f docker-compose-confluent-schema.yaml down
 ```
 ### Create Connector
+Create MySQL connector to push CDC events in AVRO format. The schema is tracked on confluent schema registry. 
 ```
 curl -i -X POST -H "Accept:application/json"     -H  "Content-Type:application/json"     http://localhost:8083/connectors/ -d @register-mysql-confluent-registry.json 
 curl http://localhost:8083/connectors
@@ -31,7 +35,7 @@ curl http://localhost:8083/connectors/rdsmysql-dev-connector-confluent-avro
 curl -X DELETE http://localhost:8083/connectors/rdsmysql-dev-connector-confluent-avro
 ```
 ### Update/Insert into table
-
+Update or insert data into the table. 
 ### Submit Hudi Delta Streamer Job
 ```shell
 spark-submit \
