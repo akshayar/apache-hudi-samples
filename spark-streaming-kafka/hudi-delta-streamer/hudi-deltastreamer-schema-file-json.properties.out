@@ -2,18 +2,21 @@
 hoodie.datasource.write.recordkey.field=tradeId
 hoodie.datasource.write.partitionpath.field=symbol
 hoodie.datasource.write.hive_style_partitioning=true
-hoodie.datasource.hive_sync.table=table_delta_streamer_avro_cow
+hoodie.datasource.write.keygenerator.class=org.apache.hudi.keygen.ComplexKeyGenerator
+hoodie.datasource.hive_sync.table=eks_ec2_deltastreamer1
 hoodie.datasource.hive_sync.database=demohudi
 hoodie.datasource.hive_sync.partition_fields=symbol
+hoodie.datasource.hive_sync.use_jdbc=false
+hoodie.datasource.hive_sync.mode=hms
 hoodie.metadata.enable=false
 hoodie.index.type=GLOBAL_BLOOM
 hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.MultiPartKeysValueExtractor
 #hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.NonPartitionedExtractor
 # Kafka Source
-hoodie.deltastreamer.source.kafka.topic=${KAFKA_TOPIC}
+hoodie.deltastreamer.source.kafka.topic=data-kafka-json
 #Kafka props
-bootstrap.servers=${KAFKA_BOOTSTRAP}
+bootstrap.servers=ip-192-168-33-209.ap-south-1.compute.internal:9092
 auto.offset.reset=earliest
-schema.registry.url=${KAFKA_SCHEMA_REGISTRY}
 # schema provider configs
-hoodie.deltastreamer.schemaprovider.registry.url=${KAFKA_SCHEMA_REGISTRY}/subjects/data-stream-ingest-streamer-avro-value/versions/latest
+hoodie.deltastreamer.filebased.schemaprovider.source.schema.file=s3://akshaya-hudi-experiments/hudideltastreamer/TradeData.avsc
+hoodie.deltastreamer.schemaprovider.source.schema.file=s3://akshaya-hudi-experiments/hudideltastreamer/TradeData.avsc

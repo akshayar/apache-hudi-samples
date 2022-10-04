@@ -22,13 +22,18 @@ sbt version in this project: 1.5.5
 sbt script version: 1.5.5
 
 ```
-
-3. Build and copy jar by running spark-streaming-kinesis/build.sh. 
+3. Build dependency. The Fargate run requires update in kinesis-sql library. It needs to be dependent on newer version of AWS SDK. A fork is created to fix. The steps below are to build newer version of kinesis-sql. 
+```shell
+git clone https://github.com/akshayar/kinesis-sql.git
+cd kinesis-sql
+mvn install -DskipTests
+```
+4. Build and copy jar by running spark-streaming-kinesis/build.sh. 
 ```
 ./build.sh <S3-Bucket-Name>
 ```
 
-2. SSH to master node and copy jar which was pushed to S3.
+5. SSH to master node and copy jar which was pushed to S3.
     
 ```
    aws s3 cp s3://<S3-Bucket-Name>/spark-structured-streaming-kinesis-hudi_2.12-1.0.jar .   

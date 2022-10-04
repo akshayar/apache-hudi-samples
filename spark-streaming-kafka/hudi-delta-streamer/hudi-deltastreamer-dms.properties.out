@@ -8,4 +8,4 @@ hoodie.datasource.hive_sync.partition_fields=symbol
 hoodie.metadata.enable=false
 hoodie.index.type=GLOBAL_BLOOM
 hoodie.datasource.hive_sync.partition_extractor_class=org.apache.hudi.hive.MultiPartKeysValueExtractor
-hoodie.deltastreamer.source.dfs.root=s3://${S3_BUCKET_FOR_DATA}/dms/
+hoodie.deltastreamer.source.dfs.root=s3://akshaya-hudi-experiments/dms/

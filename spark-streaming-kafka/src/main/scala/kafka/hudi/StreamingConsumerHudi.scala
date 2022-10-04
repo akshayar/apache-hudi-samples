@@ -57,6 +57,7 @@ object StreamingConsumerHudi {
       .builder
       .appName(applicationName)
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .config("spark.sql.warehouse.dir", "s3://"+args(0)+"/warehouse/" )
       .enableHiveSupport()
       .getOrCreate())
 
@@ -170,6 +171,7 @@ object StreamingConsumerHudi {
       .option(KEYGENERATOR_CLASS_OPT_KEY, classOf[ComplexKeyGenerator].getName)
       .option(HIVE_STYLE_PARTITIONING_OPT_KEY, "true")
       .option(HIVE_SYNC_ENABLED_OPT_KEY, "true")
+      .option("hoodie.datasource.hive_sync.mode","hms")
       .option(HIVE_TABLE_OPT_KEY, hudiTableName)
       .option(HIVE_PARTITION_FIELDS_OPT_KEY, hudiHiveTablePartitionKey)
       .option(HIVE_PARTITION_EXTRACTOR_CLASS_OPT_KEY, classOf[MultiPartKeysValueExtractor].getName)

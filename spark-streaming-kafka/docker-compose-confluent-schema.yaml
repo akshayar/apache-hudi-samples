@@ -1,0 +1,28 @@
+version: '2'
+services:
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.0.1
+    ports:
+      - 8181:8181
+      - 8081:8081
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=b-1.mskclustermskconnectl.kor5wp.c23.kafka.us-east-1.amazonaws.com:9092,b-3.mskclustermskconnectl.kor5wp.c23.kafka.us-east-1.amazonaws.com:9092,b-2.mskclustermskconnectl.kor5wp.c23.kafka.us-east-1.amazonaws.com:9092
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081
+  connect:
+    image: debezium/connect:${DEBEZIUM_VERSION}
+    ports:
+      - 8083:8083
+    links:
+      - schema-registry
+    environment:
+      - BOOTSTRAP_SERVERS=b-1.mskclustermskconnectl.kor5wp.c23.kafka.us-east-1.amazonaws.com:9092,b-3.mskclustermskconnectl.kor5wp.c23.kafka.us-east-1.amazonaws.com:9092,b-2.mskclustermskconnectl.kor5wp.c23.kafka.us-east-1.amazonaws.com:9092
+      - GROUP_ID=1
+      - INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - CONFIG_STORAGE_TOPIC=new_connect_configs3
+      - CONFIG_STORAGE_TOPIC_REPLICATION_FACTOR=3
+      - OFFSET_STORAGE_TOPIC=new_connect_offsets3
+      - OFFSET_STORAGE_TOPIC_REPLICATION_FACTOR=3
+      - STATUS_STORAGE_TOPIC=new_connect_statuses3
+      - STATUS_STORAGE_TOPIC_REPLICATION_FACTOR=3

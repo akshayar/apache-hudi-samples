@@ -11,7 +11,7 @@ libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
 
 libraryDependencies += "org.apache.spark" % "spark-sql-kafka-0-10_2.12" % sparkVersion
 libraryDependencies += "org.apache.spark" % "spark-streaming-kafka-0-10_2.12" % sparkVersion
-libraryDependencies += "org.apache.hudi" % "hudi-spark-bundle_2.12" % "0.9.0"
+libraryDependencies += "org.apache.hudi" % "hudi-spark3-bundle_2.12" % "0.9.0"
 libraryDependencies += "com.amazonaws" % "aws-java-sdk-ssm" % "1.12.1"
 
 
