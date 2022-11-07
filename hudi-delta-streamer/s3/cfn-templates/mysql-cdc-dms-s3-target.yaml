@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Description": "AWS CloudFormation Sample Template for creating an Amazon RDS DB instance:
+  with binlog replication enabled.
+  **WARNING** This template creates an RDS DB instance. You will be billed for the AWS
+  resources used if you create a stack from this template.
+Parameters:
+  DBName:
+    Default: mydb
+    Description: My database
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+  DBUsername:
+    NoEcho: 'true'
+    Description: Username for MySQL database access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBPassword:
+    NoEcho: 'true'
+    Description: Password MySQL database access
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+  MySQlVPC:
+    Description: MySQL VPC
+    Type: AWS::EC2::VPC::Id
+  MySQlSubnetA:
+    Description: First subnet
+    Type: AWS::EC2::Subnet::Id
+  MySQlSubnetB:
+    Description: First subnet
+    Type: AWS::EC2::Subnet::Id
+  ReplicationInstanceAllocatedStorage:
+    Description: >
+      The amount of storage (in gigabytes) to be initially allocated
+      for the replication instance.
+    Type: Number
+    Default: 100
+  ReplicationInstanceClass:
+    Description: >
+      The compute and memory capacity of the replication instance as specified
+      by the replication instance class.
+      Valid Values: dms.t2.micro | dms.t2.small | dms.t2.medium | dms.t2.large |
+      dms.c4.large | dms.c4.xlarge | dms.c4.2xlarge | dms.c4.4xlarge
+    Type: String
+    Default: dms.r5.xlarge
+  MySQLServer:
+    Description: >
+      The endpoint address of mysql server.
+    Type: String
+  MySQLPort:
+    Description: >
+      MySQl Port.
+    Type: String
+  DMSSecurityGroup:
+    Description: >
+      DMS Security Group.
+    Type: String
+Resources:
+  ReplicationInstanceSubnetGroup:
+    Type: AWS::DMS::ReplicationSubnetGroup
+    Properties:
+      ReplicationSubnetGroupDescription: !Sub '${AWS::StackName} DMS Subnet Group'
+      ReplicationSubnetGroupIdentifier: !Sub '${AWS::StackName}-dms-subnet-group'
+      SubnetIds:
+        - Ref: MySQlSubnetA
+        - Ref: MySQlSubnetB
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-dms'
+
+  ReplicationInstance:
+    Type: AWS::DMS::ReplicationInstance
+    Properties:
+      EngineVersion: 3.4.7
+      AllocatedStorage: !Ref ReplicationInstanceAllocatedStorage
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      MultiAZ: false
+      PubliclyAccessible: false
+      ReplicationInstanceClass: !Sub '${ReplicationInstanceClass}'
+      ReplicationInstanceIdentifier: !Sub '${AWS::StackName}-replication-instance'
+      ReplicationSubnetGroupIdentifier: !Ref ReplicationInstanceSubnetGroup
+      VpcSecurityGroupIds:
+        - Ref: DMSSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-replication-instance'
+  DmsEndpointSource:
+    Type: AWS::DMS::Endpoint
+    Properties:
+      DatabaseName: !Ref DBName
+      EndpointType: 'source'
+      EngineName: MySQL
+      ServerName: !Ref MySQLServer
+      Port: !Ref MySQLPort
+      Username: !Ref DBUsername
+      Password: !Ref DBPassword
+      Tags:
+        -
+          Key: Name
+          Value: !Sub '${AWS::StackName}-rds-source'
+  DMSS3TargetEndpoint:
+    Type: AWS::DMS::Endpoint
+    Properties:
+      EndpointIdentifier: "hudidmss3target"
+      EndpointType: "target"
+      EngineName: "s3"
+      ExtraConnectionAttributes: "dataFormat=parquet;parquetTimestampInMillisecond=true;timestampColumnName=dms_received_ts;"
+      S3Settings:
+        BucketFolder: "dmsdata"
+        BucketName: !Ref DMSS3Bucket
+        ServiceAccessRoleArn: !GetAtt DMSS3IAMRole.Arn
+  S3InterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcId: !Ref MySQlVPC
+      SubnetIds:
+        - !Ref MySQlSubnetA
+        - !Ref MySQlSubnetB
+      SecurityGroupIds:
+        - !Ref DMSSecurityGroup
+  DMSReplicationTask:
+    Type: AWS::DMS::ReplicationTask
+    Properties:
+      SourceEndpointArn: !Ref DmsEndpointSource
+      TargetEndpointArn: !Ref DMSS3TargetEndpoint
+      ReplicationInstanceArn: !Ref ReplicationInstance
+      MigrationType: full-load-and-cdc
+      TableMappings: "{\"rules\":[{\"rule-type\":\"selection\",\"rule-id\":\"1\",\"rule-name\":\"1\",\"object-locator\":{\"schema-name\":\"mydb\",\"table-name\":\"%\"},\"rule-action\":\"include\",\"filters\":[]}]}"
+
+  DMSS3Bucket:
+    Type: AWS::S3::Bucket
+
+  GlueDB:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Description: "Database for the Hudi CDC Blog"
+        LocationUri: !Join [ "", [ "s3://", ! Ref DMSS3Bucket ,"/" ] ]
+        Name: "hudiblogdb"
+
+  DMSS3IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - 'dms.amazonaws.com'
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+Outputs:
+  DMSSecurityGroup:
+    Description: DMSSecurityGroup
+    Value: !Ref DMSSecurityGroup
+  ReplicationTaskArn:
+    Description: DMSReplicationTask
+    Value: !Ref DMSReplicationTask
+  S3BucketName:
+    Description: DMSS3Bucket ARN
+    Value: !Ref DMSS3Bucket
+  IAMRoleArn:
+    Description: IAM role ARN
+    Value: !GetAtt DMSS3IAMRole.Arn

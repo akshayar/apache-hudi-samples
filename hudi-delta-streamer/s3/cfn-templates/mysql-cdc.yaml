@@ -1,0 +1,216 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: MySQL CDC
+Parameters:
+  S3BucketName:
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription: >-
+      Bucket name can include numbers, lowercase letters, uppercase
+      letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: aksh-hudi-poc
+    Description: >-
+      S3 bucket name for the Quick Start assets. Quick Start bucket name can
+      include numbers, lowercase letters, uppercase letters, and hyphens (-). It
+      cannot start or end with a hyphen (-).
+    Type: String
+  S3KeyPrefix:
+    AllowedPattern: '^[0-9a-zA-Z-/]*$'
+    ConstraintDescription: >-
+      Quick Start key prefix can include numbers, lowercase letters, uppercase
+      letters, hyphens (-), and forward slash (/).
+    Default: cfn-template
+    Description: >-
+      S3 key prefix for the Quick Start assets. Quick Start key prefix can include
+      numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/).
+    Type: String
+  DBInstanceID:
+    Default: mydbinstance
+    Description: My database instance
+    Type: String
+    MinLength: '1'
+    MaxLength: '63'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: >-
+      Must begin with a letter and must not end with a hyphen or contain two
+      consecutive hyphens.
+  DBName:
+    Default: mydb
+    Description: My database
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+  DBInstanceClass:
+    Default: db.m5.large
+    Description: DB instance class
+    Type: String
+    ConstraintDescription: Must select a valid DB instance type.
+  DBAllocatedStorage:
+    Default: '50'
+    Description: The size of the database (GiB)
+    Type: Number
+    MinValue: '20'
+    MaxValue: '65536'
+    ConstraintDescription: must be between 20 and 65536 GiB.
+  DBUsername:
+    NoEcho: 'true'
+    Description: Username for MySQL database access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBPassword:
+    NoEcho: 'true'
+    Description: Password MySQL database access
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+  MySQlVPC:
+    Description: MySQL VPC
+    Type: AWS::EC2::VPC::Id
+  MySQlSubnetA:
+    Description: First private subnet
+    Type: AWS::EC2::Subnet::Id
+  MySQlSubnetB:
+    Description: Second private subnet
+    Type: AWS::EC2::Subnet::Id
+  MySQlSubnetPublicA:
+    Description: First public subnet
+    Type: AWS::EC2::Subnet::Id
+  MySQlSubnetPublicB:
+    Description: Second public subnet
+    Type: AWS::EC2::Subnet::Id
+  ReplicationInstanceAllocatedStorage:
+    Description: >
+      The amount of storage (in gigabytes) to be initially allocated
+      for the replication instance.
+    Type: Number
+    Default: 100
+  ReplicationInstanceClass:
+    Description: >
+      The compute and memory capacity of the replication instance as specified
+      by the replication instance class.
+      Valid Values: dms.t2.micro | dms.t2.small | dms.t2.medium | dms.t2.large |
+      dms.c4.large | dms.c4.xlarge | dms.c4.2xlarge | dms.c4.4xlarge
+    Type: String
+    Default: dms.r5.xlarge
+  EC2KeyName:
+    Description: Ec2 Keyname
+    Type: AWS::EC2::KeyPair::KeyName
+  DMSTarget:
+    Description: DMSTarget
+    Type: String
+    AllowedValues : ["kinesis", "s3"]
+  StreamName:
+    Default: MyStreamName
+    Description: Kinesis Stream Name
+    Type: String
+Conditions:
+  CreateS3Target: !Equals [!Ref DMSTarget, "s3"]
+  CreateKinesisTarget: !Equals [!Ref DMSTarget, "kinesis"]
+Resources:
+  MySQLStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub >-
+        https://${S3BucketName}.s3.amazonaws.com/${S3KeyPrefix}/mysql-cdc-rds-mysql.yaml
+      Parameters:
+        DBInstanceID: !Ref DBInstanceID
+        DBName: !Ref DBName
+        DBInstanceClass: !Ref DBInstanceClass
+        DBAllocatedStorage: !Ref DBAllocatedStorage
+        DBUsername: !Ref DBUsername
+        DBPassword: !Ref DBPassword
+        MySQlVPC: !Ref MySQlVPC
+        MySQlSubnetA: !Ref MySQlSubnetPublicA
+        MySQlSubnetB: !Ref MySQlSubnetPublicB
+        EC2KeyName: !Ref EC2KeyName
+
+  DMSS3Stack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateS3Target
+    Properties:
+      TemplateURL: !Sub >-
+        https://${S3BucketName}.s3.amazonaws.com/${S3KeyPrefix}/mysql-cdc-dms-s3-target.yaml
+      Parameters:
+        DBName: !Ref DBName
+        DBUsername: !Ref DBUsername
+        DBPassword: !Ref DBPassword
+        MySQlVPC: !Ref MySQlVPC
+        MySQlSubnetA: !Ref MySQlSubnetA
+        MySQlSubnetB: !Ref MySQlSubnetB
+        ReplicationInstanceAllocatedStorage: !Ref ReplicationInstanceAllocatedStorage
+        ReplicationInstanceClass: !Ref ReplicationInstanceClass
+        MySQLServer: !GetAtt MySQLStack.Outputs.MySQLEndpointName
+        MySQLPort: !GetAtt MySQLStack.Outputs.MySQLEndpointPort
+        DMSSecurityGroup: !GetAtt MySQLStack.Outputs.DMSSecurityGroup
+
+  DMSKinesisStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateKinesisTarget
+    Properties:
+      TemplateURL: !Sub >-
+        https://${S3BucketName}.s3.amazonaws.com/${S3KeyPrefix}/mysql-cdc-dms-kinesis-target.yaml
+      Parameters:
+        DBName: !Ref DBName
+        DBUsername: !Ref DBUsername
+        DBPassword: !Ref DBPassword
+        MySQlVPC: !Ref MySQlVPC
+        MySQlSubnetA: !Ref MySQlSubnetA
+        MySQlSubnetB: !Ref MySQlSubnetB
+        ReplicationInstanceAllocatedStorage: !Ref ReplicationInstanceAllocatedStorage
+        ReplicationInstanceClass: !Ref ReplicationInstanceClass
+        MySQLServer: !GetAtt MySQLStack.Outputs.MySQLEndpointName
+        MySQLPort: !GetAtt MySQLStack.Outputs.MySQLEndpointPort
+        DMSSecurityGroup: !GetAtt MySQLStack.Outputs.DMSSecurityGroup
+        StreamName: !Ref StreamName
+Outputs:
+  KinesisArn:
+    Condition: CreateKinesisTarget
+    Value: !GetAtt DMSKinesisStack.Outputs.KinesisArn
+    Description: KinesisArn
+  IAMRoleArn:
+    Condition: CreateKinesisTarget
+    Value: !GetAtt DMSKinesisStack.Outputs.IAMRoleArn
+    Description: IAMRoleArn
+  ReplicationTaskArn:
+    Condition: CreateKinesisTarget
+    Description: DMSReplicationTask
+    Value: !GetAtt DMSKinesisStack.Outputs.ReplicationTaskArn
+  S3Bucket:
+    Condition: CreateS3Target
+    Value: !GetAtt DMSS3Stack.Outputs.S3BucketName
+    Description: KinesisArn
+  S3IAMRoleArn:
+    Condition: CreateS3Target
+    Value: !GetAtt DMSS3Stack.Outputs.IAMRoleArn
+    Description: IAMRoleArn
+  S3ReplicationTaskArn:
+    Condition: CreateS3Target
+    Description: DMSReplicationTask
+    Value: !GetAtt DMSS3Stack.Outputs.ReplicationTaskArn
+  MySQLServer:
+    Value: !GetAtt MySQLStack.Outputs.MySQLEndpointName
+    Description: MySQLServer
+  MySQLPort:
+    Value: !GetAtt MySQLStack.Outputs.MySQLEndpointPort
+    Description: MySQLEndpointPort
+  SQLConnectCommand:
+    Value: !Sub "mysql -u ${DBUsername}  -h ${MySQLStack.Outputs.MySQLEndpointName} -P ${MySQLStack.Outputs.MySQLEndpointPort} -D ${DBName} --password"
+    Description: DMSSecurityGroup
+  MySQLSecurityGroup:
+    Value: !GetAtt MySQLStack.Outputs.MySQLSecurityGroupId
+    Description: MySQLEndpointPort
+  DMSSecurityGroup:
+    Value: !GetAtt MySQLStack.Outputs.DMSSecurityGroup
+    Description: DMSSecurityGroup
+
+  SecretName:
+    Description: Secret Name
+    Value: !Ref DBInstanceID
+  EC2InstancePrivateDNS:
+    Description: Private DNS of the EC2 instance
+    Value: !GetAtt MySQLStack.Outputs.EC2InstancePrivateDNS

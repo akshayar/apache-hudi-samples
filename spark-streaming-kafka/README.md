@@ -181,10 +181,10 @@ sudo cp libfb303-0.9.3.jar /usr/lib/spark/jars
 ```
 4. Copy properties file and schema file to HDFS from where the program will read it. Copy of schema is required if you are using FilebasedSchemaProvider.
    
-   <br>JSON Data , File Schema [hudi-delta-streamer/hudi-deltastreamer-schema-file-json.properties](hudi-delta-streamer/hudi-deltastreamer-schema-file-json.properties)
-   <br>Schema File [hudi-delta-streamer/TradeData.avsc](hudi-delta-streamer/TradeData.avsc)   
+   <br>JSON Data , File Schema [hudi-delta-streamer/hudi-deltastreamer-schema-file-json.properties](../hudi-delta-streamer/kafka/hudi-deltastreamer-schema-file-json.properties)
+   <br>Schema File [hudi-delta-streamer/TradeData.avsc](../hudi-delta-streamer/kafka/TradeData.avsc)   
    
-   <br>AVRO Data , Schema Registry [hudi-delta-streamer/hudi-deltastreamer-schema-registry-avro.properties](hudi-delta-streamer/hudi-deltastreamer-schema-registry-avro.properties)
+   <br>AVRO Data , Schema Registry [hudi-delta-streamer/hudi-deltastreamer-schema-registry-avro.properties](../hudi-delta-streamer/kafka/hudi-deltastreamer-schema-registry-avro.properties)
    
 
 ```shell
