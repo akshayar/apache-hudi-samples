@@ -1,0 +1,227 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Description": "AWS CloudFormation Sample Template for creating an Amazon RDS DB instance:
+  with binlog replication enabled.
+  **WARNING** This template creates an RDS DB instance. You will be billed for the AWS
+  resources used if you create a stack from this template.
+Parameters:
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  DBInstanceID:
+    Default: mydbinstance
+    Description: My database instance
+    Type: String
+    MinLength: '1'
+    MaxLength: '63'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: >-
+      Must begin with a letter and must not end with a hyphen or contain two
+      consecutive hyphens.
+  DBName:
+    Default: mydb
+    Description: My database
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+  DBInstanceClass:
+    Default: db.m5.large
+    Description: DB instance class
+    Type: String
+    ConstraintDescription: Must select a valid DB instance type.
+  DBAllocatedStorage:
+    Default: '50'
+    Description: The size of the database (GiB)
+    Type: Number
+    MinValue: '20'
+    MaxValue: '65536'
+    ConstraintDescription: must be between 20 and 65536 GiB.
+  DBUsername:
+    NoEcho: 'true'
+    Description: Username for MySQL database access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DBPassword:
+    NoEcho: 'true'
+    Description: Password MySQL database access
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.
+  MySQlVPC:
+    Description: MySQL VPC
+    Type: AWS::EC2::VPC::Id
+  MySQlSubnetA:
+    Description: First subnet
+    Type: AWS::EC2::Subnet::Id
+  MySQlSubnetB:
+    Description: First subnet
+    Type: AWS::EC2::Subnet::Id
+  EC2KeyName:
+    Description: Ec2 Keyname
+    Type: AWS::EC2::KeyPair::KeyName
+Resources:
+  RDSDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 Security Group
+      VpcId: !Ref MySQlVPC
+  DMSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 Security Group
+      VpcId: !Ref MySQlVPC
+  RDSDBSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: -1
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !Ref DMSSecurityGroup
+      GroupId: !Ref RDSDBSecurityGroup
+  RDSDBSecurityGroupSelfIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: -1
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !Ref RDSDBSecurityGroup
+      GroupId: !Ref RDSDBSecurityGroup
+  DMSSecurityGroupSelfIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId: !Ref DMSSecurityGroup
+      GroupId: !Ref DMSSecurityGroup
+  RDSDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: 'Subnet Group For MySQL with binlog'
+      DBSubnetGroupName: 'rds-subnet'
+      SubnetIds:
+        - Ref: MySQlSubnetA
+        - Ref: MySQlSubnetB
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-mysql'
+
+  RDSDBParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: CloudFormation Sample MySQL Parameter Group
+      Family: mysql8.0
+      Parameters:
+        binlog_format: ROW
+        log_bin_use_v1_row_events: 1
+        read_only: 0
+        net_read_timeout: 3600
+        net_write_timeout: 3600
+        wait_timeout: 86400
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-mysql'
+  MyDB:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      DBParameterGroupName: !Ref RDSDBParameterGroup
+      DBInstanceIdentifier: !Ref DBInstanceID
+      DBName: !Ref DBName
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: !Ref DBAllocatedStorage
+      Engine: MySQL
+      EngineVersion: 8.0.25
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      PubliclyAccessible: true
+      VPCSecurityGroups:
+        - !Ref RDSDBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-mysql'
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      InstanceInitiatedShutdownBehavior: stop
+      EbsOptimized: true
+      ImageId: !Ref LatestAmiId
+      InstanceType: t3.xlarge
+      KeyName: !Ref EC2KeyName
+      SubnetId: !Ref MySQlSubnetA
+      SecurityGroupIds:
+        - !Ref RDSDBSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+
+          #!/bin/bash -xe
+          yum install -y mysql
+          yum install -y git
+          yum update -y
+          cd /home/ec2-user
+          DIR="aws-database-migration-samples"
+          if [ ! -d "$DIR" ]; then
+              git clone https://github.com/akshayar/emr-on-eks-samples.git
+          fi
+          cd emr-on-eks-samples/mysql-cdc-hudi/mysql/
+          mysql -u ${DBUsername}  -h ${MyDB.Endpoint.Address} -P ${MyDB.Endpoint.Port} -D ${DBName} --password="${DBPassword}" < install-rds.sql
+      Monitoring: false
+      Tags:
+        -
+          Key: Name
+          Value: DMSLabEC2
+
+  #This is a Secret resource with a randomly generated password in its SecretString JSON.
+  RDSPasswordSecret:
+    Type: 'AWS::SecretsManager::Secret'
+    Properties:
+      Name: !Ref DBInstanceID
+      Description: "This secret has RDS secret password."
+      SecretString: !Sub '{"username":"${DBUsername}","password":"${DBPassword}"}'
+      Tags:
+        -
+          Key: DB
+          Value: !Ref DBInstanceID
+Outputs:
+  MySQLEndpointName:
+    Description: MySQL endpoint address
+    Value: !GetAtt MyDB.Endpoint.Address
+  MySQLEndpointPort:
+    Description: MySQL Endpoint port
+    Value: !GetAtt MyDB.Endpoint.Port
+  MySQLSecurityGroupId:
+    Description: MySQL Security group
+    Value: !Ref RDSDBSecurityGroup
+  DMSSecurityGroup:
+    Description: MySQL Security group
+    Value: !Ref DMSSecurityGroup
+  EC2InstancePrivateDNS:
+    Description: Private DNS of the EC2 instance
+    Value: !GetAtt EC2Instance.PrivateDnsName

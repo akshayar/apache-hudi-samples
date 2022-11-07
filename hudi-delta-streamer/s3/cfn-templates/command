@@ -1,0 +1,8 @@
+aws cloudformation deploy --template-file mysql-cdc.yaml \
+--stack-name hudi-dms-s3 \
+--region ap-southeast-1 \
+--capabilities CAPABILITY_NAMED_IAM \
+--parameter-overrides DBUsername=master DBPassword=Admin123 MySQlVPC=vpc-05f301e0379574338 \
+MySQlSubnetB=subnet-0a3bc6f0e0242bf5e MySQlSubnetA=subnet-0dfdc93b33cc7e731 \
+MySQlSubnetPublicB=subnet-06660ca071e267205 MySQlSubnetPublicA=subnet-020efe5c4105e1ab3 \
+EC2KeyName=sin-isen-key DMSTarget=s3
