@@ -1,0 +1,37 @@
+{
+  "Job": {
+    "Name": "schema-evolutino-job-copy-copy",
+    "Description": "",
+    "Role": "arn:aws:iam::ACT:role/AWSGlueRuleRecommend",
+    "CreatedOn": "2023-02-14T17:27:52.199000+05:30",
+    "LastModifiedOn": "2023-02-22T16:40:34.057000+05:30",
+    "ExecutionProperty": {
+      "MaxConcurrentRuns": 1
+    },
+    "Command": {
+      "Name": "glueetl",
+      "ScriptLocation": "s3://aws-glue-assets-ACT-us-east-1/scripts/schema-evolutino-job-copy-copy.py",
+      "PythonVersion": "3"
+    },
+    "DefaultArguments": {
+      "--enable-metrics": "true",
+      "--enable-spark-ui": "true",
+      "--spark-event-logs-path": "s3://aws-glue-assets-ACT-us-east-1/sparkHistoryLogs/",
+      "--enable-job-insights": "false",
+      "--enable-glue-datacatalog": "true",
+      "--enable-continuous-cloudwatch-log": "true",
+      "--job-bookmark-option": "job-bookmark-disable",
+      "--datalake-formats": "hudi",
+      "--job-language": "python",
+      "--TempDir": "s3://aws-glue-assets-ACT-us-east-1/temporary/"
+    },
+    "MaxRetries": 0,
+    "AllocatedCapacity": 4,
+    "Timeout": 2880,
+    "MaxCapacity": 4.0,
+    "WorkerType": "G.2X",
+    "NumberOfWorkers": 2,
+    "GlueVersion": "4.0",
+    "ExecutionClass": "STANDARD"
+  }
+}
